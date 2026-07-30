@@ -1,50 +1,74 @@
 import 'package:flutter/material.dart';
-import 'package:card_settings_ui/tile/abstract_settings_tile.dart';
-import 'package:card_settings_ui/tile/settings_tile_info.dart';
-import 'package:card_settings_ui/section/abstract_settings_section.dart';
 
-class SettingsSection extends AbstractSettingsSection {
+const double _defaultOuterRadius = 20;
+const double _defaultInnerRadius = 3;
+const double _defaultRowGap = 2;
+
+/// A titled group of settings tiles.
+class SettingsSection extends StatelessWidget {
   const SettingsSection({
     required this.tiles,
     this.margin,
     this.title,
     this.bottomInfo,
+    this.backgroundColor,
+    this.outerRadius = _defaultOuterRadius,
+    this.innerRadius = _defaultInnerRadius,
+    this.tileSpacing = _defaultRowGap,
     super.key,
   });
 
-  final List<AbstractSettingsTile> tiles;
-  final EdgeInsetsDirectional? margin;
+  final List<Widget> tiles;
+  final EdgeInsetsGeometry? margin;
   final Widget? title;
   final Widget? bottomInfo;
 
+  /// Overrides the Material 3 container color used by each row.
+  ///
+  /// When omitted, [ColorScheme.surfaceContainerLow] is used in every
+  /// brightness mode. This keeps cards visible with dynamic color and OLED
+  /// themes.
+  final Color? backgroundColor;
+  final double outerRadius;
+  final double innerRadius;
+  final double tileSpacing;
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Padding(
-      padding:
-          margin ?? EdgeInsetsDirectional.only(start: 16, end: 16, bottom: 16),
+      padding: margin ?? const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (title != null)
             Padding(
               padding: const EdgeInsets.all(10),
-              child: DefaultTextStyle(
-                style: TextStyle(
+              child: DefaultTextStyle.merge(
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.primary,
                   fontSize: 13,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.w600,
                 ),
                 child: title!,
               ),
             ),
-          tileList,
+          SettingsSplitGroup(
+            outerRadius: outerRadius,
+            innerRadius: innerRadius,
+            spacing: tileSpacing,
+            backgroundColor: backgroundColor,
+            children: tiles,
+          ),
           if (bottomInfo != null)
             Padding(
               padding: const EdgeInsets.all(10),
-              child: DefaultTextStyle(
-                style: TextStyle(
+              child: DefaultTextStyle.merge(
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                   fontSize: 13,
-                  color: Theme.of(context).hintColor,
                   fontWeight: FontWeight.w600,
                 ),
                 child: bottomInfo!,
@@ -54,21 +78,121 @@ class SettingsSection extends AbstractSettingsSection {
       ),
     );
   }
+}
 
-  Widget get tileList {
-    return ListView.builder(
-      shrinkWrap: true,
-      itemCount: tiles.length,
-      padding: EdgeInsets.zero,
-      physics: const NeverScrollableScrollPhysics(),
-      itemBuilder: (BuildContext context, int index) {
-        return SettingsTileInfo(
-          isTopTile: index == 0,
-          isBottomTile: index == tiles.length - 1,
-          needDivider: index != tiles.length - 1,
-          child: tiles[index],
-        );
-      },
+/// Lays rows out as a Material 3 split list.
+///
+/// The first and last rows receive large outer corners, while interior corners
+/// remain small.
+class SettingsSplitGroup extends StatelessWidget {
+  const SettingsSplitGroup({
+    required this.children,
+    this.outerRadius = _defaultOuterRadius,
+    this.innerRadius = _defaultInnerRadius,
+    this.spacing = _defaultRowGap,
+    this.backgroundColor,
+    super.key,
+  }) : assert(outerRadius >= 0),
+       assert(innerRadius >= 0),
+       assert(spacing >= 0);
+
+  final List<Widget> children;
+  final double outerRadius;
+  final double innerRadius;
+  final double spacing;
+  final Color? backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < children.length; index++) ...[
+          if (index > 0) SizedBox(height: spacing),
+          _SplitRow(
+            first: index == 0,
+            last: index == children.length - 1,
+            outerRadius: outerRadius,
+            innerRadius: innerRadius,
+            backgroundColor: backgroundColor,
+            child: children[index],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SplitRow extends StatelessWidget {
+  const _SplitRow({
+    required this.first,
+    required this.last,
+    required this.outerRadius,
+    required this.innerRadius,
+    required this.backgroundColor,
+    required this.child,
+  });
+
+  final bool first;
+  final bool last;
+  final double outerRadius;
+  final double innerRadius;
+  final Color? backgroundColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final top = first ? outerRadius : innerRadius;
+    final bottom = last ? outerRadius : innerRadius;
+
+    return Material(
+      color:
+          backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(top),
+          bottom: Radius.circular(bottom),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
+    );
+  }
+}
+
+/// A settings section whose radio tiles share one [RadioGroup].
+class SettingsRadioSection<T> extends StatelessWidget {
+  const SettingsRadioSection({
+    required this.groupValue,
+    required this.onChanged,
+    required this.tiles,
+    this.title,
+    this.bottomInfo,
+    this.margin,
+    this.backgroundColor,
+    super.key,
+  });
+
+  final T? groupValue;
+  final ValueChanged<T?> onChanged;
+  final List<Widget> tiles;
+  final Widget? title;
+  final Widget? bottomInfo;
+  final EdgeInsetsGeometry? margin;
+  final Color? backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return RadioGroup<T>(
+      groupValue: groupValue,
+      onChanged: onChanged,
+      child: SettingsSection(
+        title: title,
+        bottomInfo: bottomInfo,
+        margin: margin,
+        backgroundColor: backgroundColor,
+        tiles: tiles,
+      ),
     );
   }
 }

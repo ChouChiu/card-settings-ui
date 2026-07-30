@@ -1,316 +1,435 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:card_settings_ui/tile/abstract_settings_tile.dart';
-import 'package:card_settings_ui/tile/settings_tile_info.dart';
 
-enum SettingsTileType {
-  simpleTile,
-  switchTile,
-  navigationTile,
-  checkboxTile,
-  radioTile,
-}
+enum _SettingsTileKind { plain, navigation, toggle, checkbox, radio }
 
-class SettingsTile<T> extends AbstractSettingsTile {
-  SettingsTile({
-    this.leading,
-    this.trailing,
+Color _disabledColor(BuildContext context) =>
+    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.38);
+
+class SettingsTile<T> extends StatelessWidget {
+  const SettingsTile({
     required this.title,
-    this.description,
-    this.onPressed,
-    this.enabled = true,
-    super.key,
-  }) {
-    onToggle = null;
-    onChanged = null;
-    initialValue = null;
-    value = null;
-    tileType = SettingsTileType.simpleTile;
-  }
-
-  SettingsTile.navigation({
     this.leading,
     this.trailing,
+    this.description,
     this.value,
-    required this.title,
-    this.description,
     this.onPressed,
     this.enabled = true,
     super.key,
-  }) {
-    onToggle = null;
-    onChanged = null;
-    initialValue = null;
-    tileType = SettingsTileType.navigationTile;
-  }
+  }) : _kind = _SettingsTileKind.plain,
+       _onSwitchChanged = null,
+       _onCheckboxChanged = null,
+       initialValue = null,
+       radioValue = null,
+       tristate = false,
+       focusNode = null,
+       autofocus = false;
 
-  SettingsTile.switchTile({
-    required this.initialValue,
-    required this.onToggle,
-    this.leading,
-    this.trailing,
+  const SettingsTile.navigation({
     required this.title,
+    this.leading,
+    this.trailing = const Icon(Icons.chevron_right_rounded),
+    this.description,
+    this.value,
+    this.onPressed,
+    this.enabled = true,
+    super.key,
+  }) : _kind = _SettingsTileKind.navigation,
+       _onSwitchChanged = null,
+       _onCheckboxChanged = null,
+       initialValue = null,
+       radioValue = null,
+       tristate = false,
+       focusNode = null,
+       autofocus = false;
+
+  const SettingsTile.switchTile({
+    required bool initialValue,
+    required ValueChanged<bool> onToggle,
+    required this.title,
+    this.leading,
     this.description,
     this.enabled = true,
     super.key,
-  }) {
-    onPressed = null;
-    onChanged = null;
-    value = null;
-    tileType = SettingsTileType.switchTile;
-  }
+  }) : _kind = _SettingsTileKind.toggle,
+       // The shared field is nullable for tri-state checkboxes; switches are not.
+       // ignore: prefer_initializing_formals
+       initialValue = initialValue,
+       _onSwitchChanged = onToggle,
+       _onCheckboxChanged = null,
+       trailing = null,
+       value = null,
+       onPressed = null,
+       radioValue = null,
+       tristate = false,
+       focusNode = null,
+       autofocus = false;
 
-  SettingsTile.checkboxTile({
+  const SettingsTile.checkboxTile({
     required this.initialValue,
-    required this.onToggle,
-    this.leading,
-    this.trailing,
+    required ValueChanged<bool?> onToggle,
     required this.title,
+    this.leading,
     this.description,
     this.enabled = true,
+    this.tristate = false,
     super.key,
-  }) {
-    onPressed = null;
-    onChanged = null;
-    value = null;
-    tileType = SettingsTileType.checkboxTile;
-  }
+  }) : _kind = _SettingsTileKind.checkbox,
+       assert(tristate || initialValue != null),
+       _onCheckboxChanged = onToggle,
+       _onSwitchChanged = null,
+       trailing = null,
+       value = null,
+       onPressed = null,
+       radioValue = null,
+       focusNode = null,
+       autofocus = false;
 
-  SettingsTile.radioTile({
+  const SettingsTile.radioTile({
     required this.radioValue,
-    required this.groupValue,
-    required this.onChanged,
-    this.leading,
-    this.trailing,
     required this.title,
+    this.leading,
     this.description,
     this.enabled = true,
+    this.focusNode,
+    this.autofocus = false,
     super.key,
-  }) {
-    onPressed = null;
-    onToggle = null;
-    value = null;
-    tileType = SettingsTileType.radioTile;
+  }) : _kind = _SettingsTileKind.radio,
+       _onSwitchChanged = null,
+       _onCheckboxChanged = null,
+       trailing = null,
+       value = null,
+       onPressed = null,
+       initialValue = null,
+       tristate = false;
+
+  final Widget? leading;
+  final Widget? trailing;
+  final Widget title;
+  final Widget? description;
+  final Widget? value;
+  final void Function(BuildContext context)? onPressed;
+  final bool enabled;
+  final bool? initialValue;
+  final T? radioValue;
+  final bool tristate;
+  final FocusNode? focusNode;
+  final bool autofocus;
+  final ValueChanged<bool>? _onSwitchChanged;
+  final ValueChanged<bool?>? _onCheckboxChanged;
+  final _SettingsTileKind _kind;
+
+  bool? get _nextCheckboxValue {
+    if (!tristate) {
+      return !(initialValue ?? false);
+    }
+    return switch (initialValue) {
+      false => true,
+      true => null,
+      null => false,
+    };
   }
 
-  /// The widget at the beginning of the tile
-  final Widget? leading;
-
-  /// The Widget at the end of the tile
-  final Widget? trailing;
-
-  /// The widget at the center of the tile
-  final Widget title;
-
-  /// The widget at the bottom of the [title]
-  final Widget? description;
-
-  /// A function that is called by tap on a tile
-  late final Function(BuildContext)? onPressed;
-
-  /// A function that is called by tap on a switch or checkbox
-  /// !! Caution: bool value could be null, you may have to add null check
-  late final Function(bool?)? onToggle;
-
-  /// A function that is called by tap on a radio button
-  late final Function(T?)? onChanged;
-
-  /// The text displayed at the end of the tile
-  late final Widget? value;
-
-  /// The bool value used by switch
-  late final bool? initialValue;
-
-  /// The bool value used by switch
-  late final T radioValue;
-
-  /// The bool value used by switch
-  late final T? groupValue;
-
-  /// Whether this tile is clickable
-  late final bool enabled;
-
-  late final SettingsTileType tileType;
-
-  final bool isDesktop =
-      Platform.isMacOS || Platform.isLinux || Platform.isWindows;
-
-  static const WidgetStateProperty<Icon> thumbIcon =
-      WidgetStateProperty<Icon>.fromMap(
-    <WidgetStatesConstraint, Icon>{
-      WidgetState.selected: Icon(Icons.check_rounded),
-      WidgetState.any: Icon(Icons.close_rounded),
-    },
-  );
+  VoidCallback? _tapHandler(BuildContext context) {
+    if (!enabled) {
+      return null;
+    }
+    return switch (_kind) {
+      _SettingsTileKind.plain || _SettingsTileKind.navigation =>
+        onPressed == null ? null : () => onPressed!(context),
+      _SettingsTileKind.toggle => () => _onSwitchChanged!(
+        !(initialValue ?? false),
+      ),
+      _SettingsTileKind.checkbox => () => _onCheckboxChanged!(
+        _nextCheckboxValue,
+      ),
+      _SettingsTileKind.radio => () {
+        final registry = RadioGroup.maybeOf<T>(context);
+        registry?.onChanged(radioValue);
+      },
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final settingsTileInfo = SettingsTileInfo.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final disabled = _disabledColor(context);
+    final primary = enabled ? colorScheme.onSurface : disabled;
+    final secondary = enabled ? colorScheme.onSurfaceVariant : disabled;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(settingsTileInfo.isTopTile ? 20 : 3),
-            bottom: Radius.circular(settingsTileInfo.isBottomTile ? 20 : 3),
-          ),
-          child: buildTileContent(context),
-        ),
-        if (settingsTileInfo.needDivider) SizedBox(height: 2),
-      ],
-    );
-  }
-
-  Widget buildLeading(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16.0),
-      child: IconTheme.merge(
-        data: IconThemeData(
-          color: enabled
-              ? Theme.of(context).colorScheme.onSurface
-              : Theme.of(context).disabledColor,
-        ),
-        child: leading!,
-      ),
-    );
-  }
-
-  Widget buildTitle(BuildContext context) {
-    return Padding(
-      padding: EdgeInsetsDirectional.symmetric(
-        vertical: description != null ? 17 : 24,
-        horizontal: 16,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return InkWell(
+      onTap: _tapHandler(context),
+      child: Row(
         children: [
-          DefaultTextStyle(
-            style: TextStyle(
-              color: enabled
-                  ? Theme.of(context).colorScheme.onSurface
-                  : Theme.of(context).disabledColor,
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
-            ),
-            child: title,
-          ),
-          if (description != null) ...[
-            const SizedBox(height: 2),
-            DefaultTextStyle(
-              style: TextStyle(
-                color: enabled
-                    ? Theme.of(context).hintColor
-                    : Theme.of(context).disabledColor,
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
+          if (leading != null)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(start: 16),
+              child: IconTheme.merge(
+                data: IconThemeData(color: secondary, size: 24),
+                child: leading!,
               ),
-              child: description!,
             ),
-          ],
+          Expanded(
+            child: Padding(
+              padding: EdgeInsetsDirectional.symmetric(
+                vertical: description != null ? 17 : 24,
+                horizontal: 16,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DefaultTextStyle.merge(
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: primary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    child: title,
+                  ),
+                  if (description != null) ...[
+                    const SizedBox(height: 2),
+                    DefaultTextStyle.merge(
+                      style: textTheme.bodySmall?.copyWith(
+                        color: secondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      child: description!,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          if (value != null)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 16),
+              child: DefaultTextStyle.merge(
+                style: textTheme.bodySmall?.copyWith(
+                  color: secondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                child: value!,
+              ),
+            ),
+          if (trailing != null)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 16),
+              child: IconTheme.merge(
+                data: IconThemeData(color: secondary),
+                child: trailing!,
+              ),
+            ),
+          if (_kind == _SettingsTileKind.toggle)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: Transform.scale(
+                scale: 0.85,
+                child: Switch(
+                  value: initialValue ?? false,
+                  onChanged: enabled ? _onSwitchChanged : null,
+                ),
+              ),
+            ),
+          if (_kind == _SettingsTileKind.checkbox)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: Checkbox(
+                value: initialValue,
+                tristate: tristate,
+                onChanged: enabled ? _onCheckboxChanged : null,
+              ),
+            ),
+          if (_kind == _SettingsTileKind.radio)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: Radio<T>(
+                value: radioValue as T,
+                enabled: enabled,
+                focusNode: focusNode,
+                autofocus: autofocus,
+              ),
+            ),
         ],
       ),
     );
   }
+}
 
-  Widget buildTrailing(BuildContext context) {
-    return Row(
-      children: [
-        if (trailing != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: trailing!,
-          ),
-        if (tileType == SettingsTileType.switchTile)
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Transform.scale(
-              scale: 0.85,
-              child: Switch(
-                thumbIcon: thumbIcon,
-                value: initialValue ?? true,
-                onChanged: (enabled) ? onToggle : null,
-              ),
-            ),
-          ),
-        if (tileType == SettingsTileType.checkboxTile)
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Checkbox(
-              tristate: true,
-              value: initialValue,
-              onChanged: (enabled) ? onToggle : null,
-            ),
-          ),
-        if (tileType == SettingsTileType.radioTile)
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Radio<T>(
-              value: radioValue,
-              groupValue: groupValue,
-              onChanged: (enabled) ? onChanged : null,
-            ),
-          ),
-        if (value != null)
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: DefaultTextStyle(
-              style: TextStyle(
-                color: enabled
-                    ? Theme.of(context).hintColor
-                    : Theme.of(context).disabledColor,
-                fontWeight: FontWeight.w500,
-                fontSize: 13,
-              ),
-              child: value!,
-            ),
-          ),
-      ],
-    );
-  }
+/// A row that opens a settings category.
+class SettingsCategoryTile extends StatelessWidget {
+  const SettingsCategoryTile({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+    super.key,
+  });
 
-  Widget buildTileContent(BuildContext context) {
-    // You need to wrap Ink widgets with Material to clip it properly.
-    return Material(
-      color: Theme.of(context).brightness == Brightness.light
-          ? Theme.of(context).colorScheme.surfaceContainerLowest
-          : Theme.of(context).colorScheme.surfaceContainerHigh,
-      child: InkWell(
-        onTap: (enabled)
-            ? () {
-                if (onPressed != null) {
-                  onPressed!.call(context);
-                }
-                if (onToggle != null) {
-                  onToggle!.call(null);
-                }
-                if (onChanged != null) {
-                  onChanged!.call(radioValue);
-                }
-              }
-            : () {},
-        mouseCursor: SystemMouseCursors.click,
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            if (leading != null) buildLeading(context),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: colorScheme.secondaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: colorScheme.onSecondaryContainer,
+              ),
+            ),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(child: buildTitle(context)),
-                      buildTrailing(context),
-                    ],
+                  Text(title, style: textTheme.bodyLarge),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A settings row with a value readout and full-width slider.
+class SettingsSliderTile extends StatelessWidget {
+  const SettingsSliderTile({
+    required this.title,
+    required this.value,
+    required this.valueLabel,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    this.divisions,
+    this.leading,
+    this.description,
+    this.enabled = true,
+    super.key,
+  }) : assert(min <= max),
+       assert(value >= min && value <= max),
+       assert(divisions == null || divisions > 0);
+
+  final Widget title;
+  final Widget? leading;
+  final Widget? description;
+  final String valueLabel;
+  final double value;
+  final double min;
+  final double max;
+  final int? divisions;
+  final ValueChanged<double> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final disabled = _disabledColor(context);
+    final foreground = enabled ? colorScheme.onSurface : disabled;
+    final secondary = enabled ? colorScheme.onSurfaceVariant : disabled;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              if (leading != null) ...[
+                IconTheme.merge(
+                  data: IconThemeData(color: secondary, size: 24),
+                  child: leading!,
+                ),
+                const SizedBox(width: 16),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DefaultTextStyle.merge(
+                      style: textTheme.bodyLarge?.copyWith(color: foreground),
+                      child: title,
+                    ),
+                    if (description != null) ...[
+                      const SizedBox(height: 2),
+                      DefaultTextStyle.merge(
+                        style: textTheme.bodySmall?.copyWith(color: secondary),
+                        child: description!,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: enabled
+                      ? colorScheme.secondaryContainer
+                      : disabled.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  valueLabel,
+                  style: textTheme.labelMedium?.copyWith(
+                    color: enabled
+                        ? colorScheme.onSecondaryContainer
+                        : disabled,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            showValueIndicator: ShowValueIndicator.never,
+            padding: EdgeInsets.zero,
+            onChanged: enabled ? onChanged : null,
+          ),
+        ],
       ),
     );
   }
