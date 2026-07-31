@@ -1,5 +1,5 @@
 name: card_settings_ui
-description: 'An adaptive Material 3 settings UI for Flutter.'
+description: 'A card-based settings UI for Flutter with adaptive Material 3 layouts and customizable tiles.'
 version: 3.0.0
 homepage: https://github.com/ErBWs/card-settings-ui
 
