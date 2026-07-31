@@ -110,38 +110,38 @@ class DemoSettingsPage extends StatelessWidget {
 
   late final List<SettingsCategoryGroup> groups = [
     SettingsCategoryGroup(
-      title: 'App',
+      title: 'Component gallery',
       categories: [
         SettingsCategory(
           id: 'appearance',
-          label: 'Appearance',
-          description: 'Theme, dynamic color and text size',
+          label: 'Theme & slider',
+          description: 'Theme updates, palette switching, and slider tile',
           icon: Icons.palette_rounded,
           builder: (_) => AppearanceSettingsPage(controller: controller),
         ),
         SettingsCategory(
           id: 'behavior',
-          label: 'Behavior',
-          description: 'Notifications and privacy',
+          label: 'Tile variants',
+          description: 'Switch, tri-state checkbox, and navigation tile',
           icon: Icons.tune_rounded,
           builder: (_) => BehaviorSettingsPage(controller: controller),
         ),
       ],
     ),
     SettingsCategoryGroup(
-      title: 'Playback',
+      title: 'Selection and metadata',
       categories: [
         SettingsCategory(
           id: 'quality',
-          label: 'Quality',
-          description: 'Choose a default stream quality',
+          label: 'Radio group',
+          description: 'Accessible shared-value selection',
           icon: Icons.high_quality_rounded,
           builder: (_) => const QualitySettingsPage(),
         ),
         SettingsCategory(
           id: 'about',
-          label: 'About',
-          description: 'Package information',
+          label: 'Info tile',
+          description: 'Informational content with a trailing value',
           icon: Icons.info_outline_rounded,
           builder: (_) => const AboutSettingsPage(),
         ),
@@ -169,23 +169,28 @@ class AppearanceSettingsPage extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         return SettingsDetailScaffold(
-          title: const Text('Appearance'),
+          title: const Text('Theme & slider'),
           body: SettingsList(
             sections: [
               SettingsSection(
-                title: const Text('Theme'),
+                title: const Text('Theme-aware controls'),
                 tiles: [
                   SettingsTile.switchTile(
                     leading: const Icon(Icons.dark_mode_rounded),
-                    title: const Text('Dark mode'),
+                    title: const Text('Theme mode'),
+                    description: const Text(
+                      'Updates ThemeMode and every semantic color token',
+                    ),
                     initialValue: controller.darkMode,
                     onToggle: (value) =>
                         controller.update(() => controller.darkMode = value),
                   ),
                   SettingsTile.switchTile(
                     leading: const Icon(Icons.color_lens_rounded),
-                    title: const Text('Simulate dynamic color'),
-                    description: const Text('Uses a wallpaper-like seed color'),
+                    title: const Text('Dynamic color preview'),
+                    description: const Text(
+                      'Rebuilds ColorScheme from a different seed color',
+                    ),
                     initialValue: controller.dynamicColor,
                     onToggle: (value) => controller.update(
                       () => controller.dynamicColor = value,
@@ -193,23 +198,28 @@ class AppearanceSettingsPage extends StatelessWidget {
                   ),
                   SettingsTile.switchTile(
                     leading: const Icon(Icons.contrast_rounded),
-                    title: const Text('OLED background'),
-                    description: const Text('Uses pure black behind the cards'),
+                    title: const Text('Scaffold background override'),
+                    description: const Text(
+                      'Overrides the page while cards retain their surface tone',
+                    ),
                     initialValue: controller.oled,
                     onToggle: (value) =>
                         controller.update(() => controller.oled = value),
                   ),
                 ],
                 bottomInfo: const Text(
-                  'Cards keep their Material container tone in every palette.',
+                  'Demonstrates surfaceContainerLow cards across generated palettes.',
                 ),
               ),
               SettingsSection(
-                title: const Text('Reading'),
+                title: const Text('Slider tile'),
                 tiles: [
                   SettingsSliderTile(
                     leading: const Icon(Icons.text_fields_rounded),
                     title: const Text('Text scale'),
+                    description: const Text(
+                      'Displays a formatted value with a full-width slider',
+                    ),
                     value: controller.textScale,
                     valueLabel: '${controller.textScale.toStringAsFixed(1)}×',
                     min: 0.8,
@@ -239,15 +249,18 @@ class BehaviorSettingsPage extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         return SettingsDetailScaffold(
-          title: const Text('Behavior'),
+          title: const Text('Tile variants'),
           body: SettingsList(
             sections: [
               SettingsSection(
-                title: const Text('General'),
+                title: const Text('Interactive tiles'),
                 tiles: [
                   SettingsTile.switchTile(
                     leading: const Icon(Icons.notifications_rounded),
                     title: const Text('Notifications'),
+                    description: const Text(
+                      'Switch tile with whole-row toggle behavior',
+                    ),
                     initialValue: controller.notifications,
                     onToggle: (value) => controller.update(
                       () => controller.notifications = value,
@@ -256,7 +269,9 @@ class BehaviorSettingsPage extends StatelessWidget {
                   SettingsTile.checkboxTile(
                     leading: const Icon(Icons.analytics_outlined),
                     title: const Text('Anonymous analytics'),
-                    description: const Text('Optional three-state preference'),
+                    description: const Text(
+                      'Tri-state checkbox with an indeterminate value',
+                    ),
                     initialValue: controller.analytics,
                     tristate: true,
                     onToggle: (value) =>
@@ -265,6 +280,9 @@ class BehaviorSettingsPage extends StatelessWidget {
                   SettingsTile.navigation(
                     leading: const Icon(Icons.language_rounded),
                     title: const Text('Language'),
+                    description: const Text(
+                      'Navigation tile with a value and trailing chevron',
+                    ),
                     value: const Text('English'),
                     onPressed: (_) {},
                   ),
@@ -291,11 +309,14 @@ class _QualitySettingsPageState extends State<QualitySettingsPage> {
   @override
   Widget build(BuildContext context) {
     return SettingsDetailScaffold(
-      title: const Text('Quality'),
+      title: const Text('Radio group'),
       body: SettingsList(
         sections: [
           SettingsRadioSection<String>(
-            title: const Text('Default quality'),
+            title: const Text('Shared selection'),
+            bottomInfo: const Text(
+              'Radio tiles share selection, keyboard navigation, and semantics.',
+            ),
             groupValue: quality,
             onChanged: (value) {
               if (value != null) {
@@ -322,7 +343,7 @@ class AboutSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SettingsDetailScaffold(
-      title: const Text('About'),
+      title: const Text('Info tile'),
       body: SettingsList(
         sections: [
           SettingsSection(
@@ -330,7 +351,9 @@ class AboutSettingsPage extends StatelessWidget {
               SettingsTile(
                 leading: const Icon(Icons.widgets_rounded),
                 title: const Text('card_settings_ui'),
-                description: const Text('Adaptive Material 3 settings'),
+                description: const Text(
+                  'Plain informational tile with a trailing version value',
+                ),
                 value: const Text('3.0.0'),
               ),
             ],

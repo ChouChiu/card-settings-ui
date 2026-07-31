@@ -11,12 +11,12 @@ void main() {
     );
 
     await tester.pumpWidget(const MyApp());
-    expect(find.text('Appearance').hitTestable(), findsOneWidget);
+    expect(find.text('Theme & slider').hitTestable(), findsOneWidget);
 
-    await tester.tap(find.text('Appearance').hitTestable());
+    await tester.tap(find.text('Theme & slider').hitTestable());
     await tester.pumpAndSettle();
-    expect(find.text('Simulate dynamic color'), findsOneWidget);
-    expect(find.text('OLED background'), findsOneWidget);
+    expect(find.text('Dynamic color preview'), findsOneWidget);
+    expect(find.text('Scaffold background override'), findsOneWidget);
 
     final sliderTheme = Theme.of(
       tester.element(find.byType(Slider)),
