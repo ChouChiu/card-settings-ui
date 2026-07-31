@@ -85,7 +85,7 @@ class SettingsTile<T> extends StatelessWidget {
        autofocus = false;
 
   const SettingsTile.radioTile({
-    required this.radioValue,
+    required T radioValue,
     required this.title,
     this.leading,
     this.description,
@@ -100,6 +100,9 @@ class SettingsTile<T> extends StatelessWidget {
        value = null,
        onPressed = null,
        initialValue = null,
+       // The shared field is nullable for non-radio tile constructors.
+       // ignore: prefer_initializing_formals
+       radioValue = radioValue,
        tristate = false;
 
   final Widget? leading;

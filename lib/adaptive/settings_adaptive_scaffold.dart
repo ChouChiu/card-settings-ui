@@ -131,8 +131,8 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
   @override
   void didUpdateWidget(SettingsAdaptiveScaffold oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_selected != null && _findCategory(_selected!.id) == null) {
-      _selected = null;
+    if (_selected != null) {
+      _selected = _findCategory(_selected!.id);
     }
     if (_selected == null &&
         oldWidget.initialCategoryId != widget.initialCategoryId) {

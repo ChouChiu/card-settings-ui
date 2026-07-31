@@ -346,6 +346,30 @@ void main() {
     await tester.pump();
     expect(selected, 'B');
   });
+
+  testWidgets('radio tile allows null only through a nullable value type', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _app(
+        child: const SettingsRadioSection<String?>(
+          groupValue: null,
+          onChanged: _ignoreNullableString,
+          tiles: [
+            SettingsTile<String?>.radioTile(
+              title: Text('None'),
+              radioValue: null,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(find.text('None'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 void _ignoreContext(BuildContext context) {}
+
+void _ignoreNullableString(String? value) {}

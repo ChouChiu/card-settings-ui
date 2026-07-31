@@ -32,6 +32,23 @@ List<SettingsCategoryGroup> _groups() {
   ];
 }
 
+List<SettingsCategoryGroup> _groupsWithBody(String body) {
+  return [
+    SettingsCategoryGroup(
+      title: 'Group',
+      categories: [
+        SettingsCategory(
+          id: 'a',
+          label: 'Category A',
+          description: 'First category',
+          icon: Icons.looks_one_rounded,
+          builder: (_) => Text(body),
+        ),
+      ],
+    ),
+  ];
+}
+
 Widget _app() {
   return MaterialApp(
     home: SettingsAdaptiveScaffold(
@@ -143,5 +160,34 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(Navigator), findsNWidgets(2));
     expect(find.byType(HeroControllerScope), findsWidgets);
+  });
+
+  testWidgets('selected category refreshes when groups are replaced', (
+    tester,
+  ) async {
+    _setSize(tester, const Size(900, 600));
+    late StateSetter rebuild;
+    var groups = _groupsWithBody('Old body');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return SettingsAdaptiveScaffold(
+              title: const Text('Settings'),
+              initialCategoryId: 'a',
+              groups: groups,
+            );
+          },
+        ),
+      ),
+    );
+    expect(find.text('Old body'), findsOneWidget);
+
+    rebuild(() => groups = _groupsWithBody('New body'));
+    await tester.pump();
+    expect(find.text('Old body'), findsNothing);
+    expect(find.text('New body'), findsOneWidget);
   });
 }

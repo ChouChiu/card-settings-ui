@@ -18,7 +18,7 @@ A card based settings ui for flutter. Inspired by [settings_ui](https://pub.dev/
 
 ```yaml
 dependencies:
-  card_settings_ui: ^2.0.1
+  card_settings_ui: ^3.0.0
  ```  
 
 2. Import the `card_settings_ui` package.
