@@ -58,6 +58,46 @@ Widget _app() {
   );
 }
 
+Widget _appWithNestedDetail() {
+  return MaterialApp(
+    home: SettingsAdaptiveScaffold(
+      title: const Text('Settings'),
+      groups: [
+        SettingsCategoryGroup(
+          title: 'Group',
+          categories: [
+            SettingsCategory(
+              id: 'a',
+              label: 'Category A',
+              description: 'First category',
+              icon: Icons.looks_one_rounded,
+              builder: (_) => SettingsDetailScaffold(
+                title: const Text('Detail A'),
+                body: Builder(
+                  builder: (context) => Center(
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const Scaffold(
+                              body: Center(child: Text('Nested detail')),
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Open nested detail'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
 void _setSize(WidgetTester tester, Size size) {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
@@ -94,6 +134,7 @@ void main() {
     expect(find.text('Body A'), findsOneWidget);
     expect(find.byType(NavigationDrawer), findsOneWidget);
     expect(find.byType(NavigationDrawerDestination), findsNWidgets(2));
+    expect(tester.getSize(find.byType(NavigationDrawer)).width, 360);
 
     await tester.tap(find.text('Category B').hitTestable());
     await tester.pumpAndSettle();
@@ -150,16 +191,45 @@ void main() {
     expect(find.text('Category A').hitTestable(), findsOneWidget);
   });
 
-  testWidgets('nested navigator owns a separate HeroController', (
-    tester,
-  ) async {
+  testWidgets('nested navigators own separate HeroControllers', (tester) async {
     _setSize(tester, const Size(900, 600));
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.byType(Navigator), findsNWidgets(2));
+    expect(find.byType(Navigator), findsNWidgets(3));
     expect(find.byType(HeroControllerScope), findsWidgets);
+  });
+
+  testWidgets('wide nested detail does not cover the navigation rail', (
+    tester,
+  ) async {
+    _setSize(tester, const Size(900, 600));
+    await tester.pumpWidget(_appWithNestedDetail());
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationDrawer), findsOneWidget);
+    await tester.tap(find.text('Open nested detail'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
+    final enteringStart = tester.getCenter(find.text('Nested detail')).dx;
+    await tester.pump(const Duration(milliseconds: 150));
+    final enteringMiddle = tester.getCenter(find.text('Nested detail')).dx;
+    await tester.pumpAndSettle();
+    final enteringEnd = tester.getCenter(find.text('Nested detail')).dx;
+
+    expect(find.text('Nested detail'), findsOneWidget);
+    expect(enteringStart, greaterThan(enteringMiddle));
+    expect(enteringMiddle, greaterThan(enteringEnd));
+    expect(find.byType(NavigationDrawer), findsOneWidget);
+    expect(find.text('Category A').hitTestable(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Nested detail'), findsNothing);
+    expect(find.text('Open nested detail'), findsOneWidget);
+    expect(find.byType(NavigationDrawer), findsOneWidget);
   });
 
   testWidgets('selected category refreshes when groups are replaced', (

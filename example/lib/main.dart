@@ -95,6 +95,7 @@ class DemoSettingsController extends ChangeNotifier {
   bool oled = false;
   bool notifications = true;
   bool? analytics = false;
+  String language = 'English';
   double textScale = 1;
 
   void update(VoidCallback change) {
@@ -281,11 +282,59 @@ class BehaviorSettingsPage extends StatelessWidget {
                     leading: const Icon(Icons.language_rounded),
                     title: const Text('Language'),
                     description: const Text(
-                      'Navigation tile with a value and trailing chevron',
+                      'Opens a nested page inside the wide detail pane',
                     ),
-                    value: const Text('English'),
-                    onPressed: (_) {},
+                    value: Text(controller.language),
+                    onPressed: (context) {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              LanguageSettingsPage(controller: controller),
+                        ),
+                      );
+                    },
                   ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class LanguageSettingsPage extends StatelessWidget {
+  const LanguageSettingsPage({required this.controller, super.key});
+
+  final DemoSettingsController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        return SettingsDetailScaffold(
+          title: const Text('Language'),
+          body: SettingsList(
+            sections: [
+              SettingsRadioSection<String>(
+                title: const Text('App language'),
+                bottomInfo: const Text(
+                  'On wide layouts, this nested page keeps the category rail visible.',
+                ),
+                groupValue: controller.language,
+                onChanged: (value) {
+                  if (value != null) {
+                    controller.update(() => controller.language = value);
+                  }
+                },
+                tiles: [
+                  for (final language in ['English', '简体中文', '日本語'])
+                    SettingsTile<String>.radioTile(
+                      title: Text(language),
+                      radioValue: language,
+                    ),
                 ],
               ),
             ],

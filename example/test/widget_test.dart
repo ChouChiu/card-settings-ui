@@ -42,4 +42,24 @@ void main() {
     // ignore: deprecated_member_use
     expect(progressTheme.year2023, isFalse);
   });
+
+  testWidgets('wide nested page keeps the category drawer visible', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(900, 600);
+    addTearDown(
+      TestWidgetsFlutterBinding.instance.platformDispatcher.clearAllTestValues,
+    );
+
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.text('Tile variants').hitTestable());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Language').hitTestable());
+    await tester.pumpAndSettle();
+
+    expect(find.text('App language'), findsOneWidget);
+    expect(find.byType(NavigationDrawer), findsOneWidget);
+    expect(find.text('Tile variants').hitTestable(), findsOneWidget);
+  });
 }

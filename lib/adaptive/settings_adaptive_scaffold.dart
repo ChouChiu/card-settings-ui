@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:card_settings_ui/adaptive/settings_detail_scaffold.dart';
 import 'package:card_settings_ui/section/settings_section.dart';
 import 'package:card_settings_ui/tile/settings_tile.dart';
@@ -56,7 +57,7 @@ class SettingsAdaptiveScaffold extends StatefulWidget {
     this.leading,
     this.actions,
     this.breakpoint = 600,
-    this.railWidth = 280,
+    this.railWidth = 360,
     this.transitionDuration = const Duration(milliseconds: 250),
     this.detailPadding = const EdgeInsetsDirectional.fromSTEB(8, 0, 12, 0),
     this.onBack,
@@ -154,6 +155,12 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
     }
   }
 
+  @override
+  void dispose() {
+    _heroController.dispose();
+    super.dispose();
+  }
+
   void _select(SettingsCategory category) {
     setState(() => _selected = category);
   }
@@ -235,7 +242,9 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
           children: [
             ClipRect(
               child: AnimatedAlign(
-                duration: widget.transitionDuration,
+                duration: _layoutChanged
+                    ? Duration.zero
+                    : widget.transitionDuration,
                 curve: Curves.easeInOutCubic,
                 alignment: AlignmentDirectional.centerStart,
                 widthFactor: twoPane ? 1 : 0,
@@ -275,12 +284,7 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
     return Padding(
       key: ValueKey<String>('settings-pane:${shown.id}'),
       padding: widget.detailPadding,
-      child: _withoutScrollbars(
-        SettingsPaneScope(
-          embedded: true,
-          child: Builder(builder: shown.builder),
-        ),
-      ),
+      child: _withoutScrollbars(_SettingsPaneNavigator(category: shown)),
     );
   }
 
@@ -356,6 +360,131 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
         ],
       ],
     );
+  }
+}
+
+class _SettingsPaneNavigator extends StatefulWidget {
+  const _SettingsPaneNavigator({required this.category});
+
+  final SettingsCategory category;
+
+  @override
+  State<_SettingsPaneNavigator> createState() => _SettingsPaneNavigatorState();
+}
+
+class _SettingsPaneNavigatorState extends State<_SettingsPaneNavigator> {
+  static const _pageTransitionsTheme = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: _SettingsForwardPageTransitionsBuilder(),
+      TargetPlatform.fuchsia: _SettingsForwardPageTransitionsBuilder(),
+      TargetPlatform.linux: _SettingsForwardPageTransitionsBuilder(),
+      TargetPlatform.windows: _SettingsForwardPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+    },
+  );
+
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  late final HeroController _heroController =
+      MaterialApp.createMaterialHeroController();
+
+  @override
+  void dispose() {
+    _heroController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(
+        context,
+      ).copyWith(pageTransitionsTheme: _pageTransitionsTheme),
+      child: NavigatorPopHandler(
+        onPopWithResult: (_) => _navigatorKey.currentState?.maybePop(),
+        child: HeroControllerScope(
+          controller: _heroController,
+          child: Navigator(
+            key: _navigatorKey,
+            onDidRemovePage: (_) {},
+            pages: [
+              MaterialPage<void>(
+                key: ValueKey<String>(
+                  'settings-pane-root:${widget.category.id}',
+                ),
+                child: SettingsPaneScope(
+                  embedded: true,
+                  child: Builder(builder: widget.category.builder),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Classic Material 3 forward/back transition for consecutive hierarchy levels.
+///
+/// It deliberately moves only a quarter of the pane width. This keeps the
+/// direction of travel clear without the heavy motion of a full-width slide.
+class _SettingsForwardPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _SettingsForwardPageTransitionsBuilder();
+
+  static final Animatable<Offset> _enterSlide = Tween<Offset>(
+    begin: const Offset(0.25, 0),
+    end: Offset.zero,
+  ).chain(CurveTween(curve: Curves.fastOutSlowIn));
+
+  static final Animatable<Offset> _exitSlide = Tween<Offset>(
+    begin: Offset.zero,
+    end: const Offset(-0.25, 0),
+  ).chain(CurveTween(curve: Curves.fastOutSlowIn));
+
+  static final Animatable<double> _enterFade = Tween<double>(
+    begin: 0,
+    end: 1,
+  ).chain(CurveTween(curve: const Interval(0.25, 1, curve: Curves.easeOut)));
+
+  static final Animatable<double> _exitFade = Tween<double>(
+    begin: 1,
+    end: 0,
+  ).chain(CurveTween(curve: const Interval(0, 0.25, curve: Curves.easeOut)));
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 300);
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final enterOpacity = _enterFade.animate(animation);
+    final exitOpacity = _exitFade.animate(secondaryAnimation);
+
+    Widget result = FadeTransition(
+      opacity: enterOpacity,
+      child: FadeTransition(opacity: exitOpacity, child: child),
+    );
+
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      final textDirection = Directionality.of(context);
+      result = SlideTransition(
+        position: _exitSlide.animate(secondaryAnimation),
+        textDirection: textDirection,
+        child: SlideTransition(
+          position: _enterSlide.animate(animation),
+          textDirection: textDirection,
+          child: result,
+        ),
+      );
+    }
+
+    return result;
   }
 }
 
