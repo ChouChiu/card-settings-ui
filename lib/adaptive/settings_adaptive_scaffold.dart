@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:card_settings_ui/adaptive/settings_detail_scaffold.dart';
 import 'package:card_settings_ui/section/settings_section.dart';
-import 'package:card_settings_ui/tile/settings_tile.dart';
+import 'package:card_settings_ui/tile/settings_category_tile.dart';
 
 @immutable
 class SettingsCategory {

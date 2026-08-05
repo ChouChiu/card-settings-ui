@@ -183,8 +183,9 @@ class AppearanceSettingsPage extends StatelessWidget {
                       'Updates ThemeMode and every semantic color token',
                     ),
                     initialValue: controller.darkMode,
-                    onToggle: (value) =>
-                        controller.update(() => controller.darkMode = value),
+                    onToggle: (value) => controller.update(
+                      () => controller.darkMode = value ?? !controller.darkMode,
+                    ),
                   ),
                   SettingsTile.switchTile(
                     leading: const Icon(Icons.color_lens_rounded),
@@ -194,7 +195,8 @@ class AppearanceSettingsPage extends StatelessWidget {
                     ),
                     initialValue: controller.dynamicColor,
                     onToggle: (value) => controller.update(
-                      () => controller.dynamicColor = value,
+                      () =>
+                          controller.dynamicColor = value ?? !controller.dynamicColor,
                     ),
                   ),
                   SettingsTile.switchTile(
@@ -204,8 +206,9 @@ class AppearanceSettingsPage extends StatelessWidget {
                       'Overrides the page while cards retain their surface tone',
                     ),
                     initialValue: controller.oled,
-                    onToggle: (value) =>
-                        controller.update(() => controller.oled = value),
+                    onToggle: (value) => controller.update(
+                      () => controller.oled = value ?? !controller.oled,
+                    ),
                   ),
                 ],
                 bottomInfo: const Text(
@@ -264,7 +267,8 @@ class BehaviorSettingsPage extends StatelessWidget {
                     ),
                     initialValue: controller.notifications,
                     onToggle: (value) => controller.update(
-                      () => controller.notifications = value,
+                      () =>
+                          controller.notifications = value ?? !controller.notifications,
                     ),
                   ),
                   SettingsTile.checkboxTile(
@@ -274,9 +278,10 @@ class BehaviorSettingsPage extends StatelessWidget {
                       'Tri-state checkbox with an indeterminate value',
                     ),
                     initialValue: controller.analytics,
-                    tristate: true,
-                    onToggle: (value) =>
-                        controller.update(() => controller.analytics = value),
+                    onToggle: (value) => controller.update(
+                      () =>
+                          controller.analytics = value ?? !(controller.analytics ?? false),
+                    ),
                   ),
                   SettingsTile.navigation(
                     leading: const Icon(Icons.language_rounded),
@@ -318,22 +323,22 @@ class LanguageSettingsPage extends StatelessWidget {
           title: const Text('Language'),
           body: SettingsList(
             sections: [
-              SettingsRadioSection<String>(
+              SettingsSection(
                 title: const Text('App language'),
                 bottomInfo: const Text(
                   'On wide layouts, this nested page keeps the category rail visible.',
                 ),
-                groupValue: controller.language,
-                onChanged: (value) {
-                  if (value != null) {
-                    controller.update(() => controller.language = value);
-                  }
-                },
                 tiles: [
                   for (final language in ['English', '简体中文', '日本語'])
                     SettingsTile<String>.radioTile(
                       title: Text(language),
                       radioValue: language,
+                      groupValue: controller.language,
+                      onChanged: (value) {
+                        if (value != null) {
+                          controller.update(() => controller.language = value);
+                        }
+                      },
                     ),
                 ],
               ),
@@ -361,22 +366,22 @@ class _QualitySettingsPageState extends State<QualitySettingsPage> {
       title: const Text('Radio group'),
       body: SettingsList(
         sections: [
-          SettingsRadioSection<String>(
+          SettingsSection(
             title: const Text('Shared selection'),
             bottomInfo: const Text(
-              'Radio tiles share selection, keyboard navigation, and semantics.',
+              'Radio tiles share selection through a common group value.',
             ),
-            groupValue: quality,
-            onChanged: (value) {
-              if (value != null) {
-                setState(() => quality = value);
-              }
-            },
             tiles: [
               for (final option in ['Auto', '1080p', '720p'])
                 SettingsTile<String>.radioTile(
                   title: Text(option),
                   radioValue: option,
+                  groupValue: quality,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => quality = value);
+                    }
+                  },
                 ),
             ],
           ),
@@ -397,13 +402,13 @@ class AboutSettingsPage extends StatelessWidget {
         sections: [
           SettingsSection(
             tiles: [
-              SettingsTile(
+              SettingsTile.navigation(
                 leading: const Icon(Icons.widgets_rounded),
                 title: const Text('card_settings_ui'),
                 description: const Text(
                   'Plain informational tile with a trailing version value',
                 ),
-                value: const Text('3.0.0'),
+                value: const Text('2.0.1'),
               ),
             ],
           ),

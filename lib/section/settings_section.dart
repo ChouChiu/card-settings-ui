@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:card_settings_ui/tile/settings_tile_info.dart';
 
 const double _defaultOuterRadius = 20;
 const double _defaultInnerRadius = 3;
@@ -115,7 +116,13 @@ class SettingsSplitGroup extends StatelessWidget {
             outerRadius: outerRadius,
             innerRadius: innerRadius,
             backgroundColor: backgroundColor,
-            child: children[index],
+            child: SettingsTileInfo(
+              isTopTile: index == 0,
+              isBottomTile: index == children.length - 1,
+              // Row gaps come from [spacing]; tiles must not add their own.
+              needDivider: false,
+              child: children[index],
+            ),
           ),
         ],
       ],
@@ -156,43 +163,6 @@ class _SplitRow extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: child,
-    );
-  }
-}
-
-/// A settings section whose radio tiles share one [RadioGroup].
-class SettingsRadioSection<T> extends StatelessWidget {
-  const SettingsRadioSection({
-    required this.groupValue,
-    required this.onChanged,
-    required this.tiles,
-    this.title,
-    this.bottomInfo,
-    this.margin,
-    this.backgroundColor,
-    super.key,
-  });
-
-  final T? groupValue;
-  final ValueChanged<T?> onChanged;
-  final List<Widget> tiles;
-  final Widget? title;
-  final Widget? bottomInfo;
-  final EdgeInsetsGeometry? margin;
-  final Color? backgroundColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return RadioGroup<T>(
-      groupValue: groupValue,
-      onChanged: onChanged,
-      child: SettingsSection(
-        title: title,
-        bottomInfo: bottomInfo,
-        margin: margin,
-        backgroundColor: backgroundColor,
-        tiles: tiles,
-      ),
     );
   }
 }
