@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:card_settings_ui/tile/abstract_settings_tile.dart';
 import 'package:card_settings_ui/tile/settings_tile_info.dart';
@@ -138,7 +139,7 @@ class SettingsTile<T> extends AbstractSettingsTile {
   late final SettingsTileType tileType;
 
   final bool isDesktop =
-      Platform.isMacOS || Platform.isLinux || Platform.isWindows;
+      !kIsWeb && (Platform.isMacOS || Platform.isLinux || Platform.isWindows);
 
   static const WidgetStateProperty<Icon> thumbIcon =
       WidgetStateProperty<Icon>.fromMap(
