@@ -1,11 +1,13 @@
 name: card_settings_ui
 description: 'A card-based settings UI for Flutter with adaptive Material 3 layouts and customizable tiles.'
-version: 3.0.0
+version: 2.0.1
 homepage: https://github.com/ErBWs/card-settings-ui
 
 environment:
-  sdk: '>=3.8.0 <4.0.0'
-  flutter: '>=3.41.0'
+  sdk: '>=3.0.0 <4.0.0'
+  # Requires Color.withValues (Flutter 3.27.0) and Material 3 surface
+  # container colors used by the adaptive sections and slider tile.
+  flutter: '>=3.27.0'
 
 dependencies:
   flutter:

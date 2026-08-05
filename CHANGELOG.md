@@ -1,12 +1,3 @@
-## 3.0.0
-
-* feat: add adaptive compact and wide settings navigation.
-* feat: add detail scaffolds, split groups, category tiles, and slider tiles.
-* feat: move radio selection management to `SettingsRadioSection`.
-* fix: preserve Web and other non-IO platform support.
-* breaking: replace typed section and tile collections with `List<Widget>`.
-* breaking: remove the abstract and custom section and tile APIs.
-
 ## 2.0.1
 
 * chore: more Android 16 QPR like appearance.
