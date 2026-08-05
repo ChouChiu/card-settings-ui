@@ -166,3 +166,44 @@ class _SplitRow extends StatelessWidget {
     );
   }
 }
+
+/// A settings section whose radio tiles share one [RadioGroup].
+///
+/// Radio tiles inside the section may omit [SettingsTile.radioTile]'s
+/// [SettingsTile.radioTile.groupValue] and
+/// [SettingsTile.radioTile.onChanged]; the group drives their selection.
+class SettingsRadioSection<T> extends StatelessWidget {
+  const SettingsRadioSection({
+    required this.groupValue,
+    required this.onChanged,
+    required this.tiles,
+    this.title,
+    this.bottomInfo,
+    this.margin,
+    this.backgroundColor,
+    super.key,
+  });
+
+  final T? groupValue;
+  final ValueChanged<T?> onChanged;
+  final List<Widget> tiles;
+  final Widget? title;
+  final Widget? bottomInfo;
+  final EdgeInsetsGeometry? margin;
+  final Color? backgroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return RadioGroup<T>(
+      groupValue: groupValue,
+      onChanged: onChanged,
+      child: SettingsSection(
+        title: title,
+        bottomInfo: bottomInfo,
+        margin: margin,
+        backgroundColor: backgroundColor,
+        tiles: tiles,
+      ),
+    );
+  }
+}

@@ -76,10 +76,15 @@ class SettingsTile<T> extends AbstractSettingsTile {
     tileType = SettingsTileType.checkboxTile;
   }
 
+  /// Creates a radio tile.
+  ///
+  /// Pass [groupValue] and [onChanged] to manage selection per tile, as in
+  /// card_settings_ui 2.x. When both are omitted, selection is managed by the
+  /// nearest [RadioGroup] ancestor, e.g. via [SettingsRadioSection].
   SettingsTile.radioTile({
     required this.radioValue,
-    required this.groupValue,
-    required this.onChanged,
+    this.groupValue,
+    this.onChanged,
     this.leading,
     this.trailing,
     required this.title,
@@ -255,6 +260,7 @@ class SettingsTile<T> extends AbstractSettingsTile {
               groupValue: groupValue,
               // ignore: deprecated_member_use
               onChanged: (enabled) ? onChanged : null,
+              enabled: enabled,
             ),
           ),
         if (value != null)
@@ -292,6 +298,11 @@ class SettingsTile<T> extends AbstractSettingsTile {
                 }
                 if (onChanged != null) {
                   onChanged!.call(radioValue);
+                } else if (tileType == SettingsTileType.radioTile) {
+                  // Selection managed by a RadioGroup ancestor, e.g. via
+                  // SettingsRadioSection, when groupValue/onChanged are
+                  // omitted.
+                  RadioGroup.maybeOf<T>(context)?.onChanged(radioValue);
                 }
               }
             : () {},

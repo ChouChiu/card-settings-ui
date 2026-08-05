@@ -5,9 +5,10 @@ homepage: https://github.com/ErBWs/card-settings-ui
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
-  # Requires Color.withValues (Flutter 3.27.0) and Material 3 surface
-  # container colors used by the adaptive sections and slider tile.
-  flutter: '>=3.27.0'
+  # Requires RadioGroup and Radio.enabled (Flutter 3.32.0) for
+  # SettingsRadioSection, Color.withValues (3.27.0), and Material 3
+  # surface container colors (3.22.0).
+  flutter: '>=3.32.0'
 
 dependencies:
   flutter:

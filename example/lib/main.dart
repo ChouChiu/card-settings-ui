@@ -323,22 +323,22 @@ class LanguageSettingsPage extends StatelessWidget {
           title: const Text('Language'),
           body: SettingsList(
             sections: [
-              SettingsSection(
+              SettingsRadioSection<String>(
                 title: const Text('App language'),
                 bottomInfo: const Text(
                   'On wide layouts, this nested page keeps the category rail visible.',
                 ),
+                groupValue: controller.language,
+                onChanged: (value) {
+                  if (value != null) {
+                    controller.update(() => controller.language = value);
+                  }
+                },
                 tiles: [
                   for (final language in ['English', '简体中文', '日本語'])
                     SettingsTile<String>.radioTile(
                       title: Text(language),
                       radioValue: language,
-                      groupValue: controller.language,
-                      onChanged: (value) {
-                        if (value != null) {
-                          controller.update(() => controller.language = value);
-                        }
-                      },
                     ),
                 ],
               ),
@@ -366,22 +366,22 @@ class _QualitySettingsPageState extends State<QualitySettingsPage> {
       title: const Text('Radio group'),
       body: SettingsList(
         sections: [
-          SettingsSection(
+          SettingsRadioSection<String>(
             title: const Text('Shared selection'),
             bottomInfo: const Text(
-              'Radio tiles share selection through a common group value.',
+              'Radio tiles share selection, keyboard navigation, and semantics.',
             ),
+            groupValue: quality,
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => quality = value);
+              }
+            },
             tiles: [
               for (final option in ['Auto', '1080p', '720p'])
                 SettingsTile<String>.radioTile(
                   title: Text(option),
                   radioValue: option,
-                  groupValue: quality,
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => quality = value);
-                    }
-                  },
                 ),
             ],
           ),
