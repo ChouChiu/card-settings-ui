@@ -45,6 +45,9 @@ class SettingsDetailScaffold extends StatelessWidget {
     final scope = SettingsPaneScope.maybeOf(context);
 
     if (scope?.embedded ?? false) {
+      final canPop = ModalRoute.of(context)?.impliesAppBarDismissal ?? false;
+      final effectiveLeading = leading ?? (canPop ? const BackButton() : null);
+
       return Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -52,8 +55,10 @@ class SettingsDetailScaffold extends StatelessWidget {
           scrolledUnderElevation: 0,
           automaticallyImplyLeading: false,
           toolbarHeight: 64,
-          titleSpacing: leading == null ? 24 : NavigationToolbar.kMiddleSpacing,
-          leading: leading,
+          titleSpacing: effectiveLeading == null
+              ? 24
+              : NavigationToolbar.kMiddleSpacing,
+          leading: effectiveLeading,
           title: title,
           titleTextStyle: Theme.of(context).textTheme.headlineSmall,
           actions: actions,
@@ -68,12 +73,7 @@ class SettingsDetailScaffold extends StatelessWidget {
         actions: actions,
         leading:
             leading ??
-            (scope?.onBack == null
-                ? null
-                : IconButton(
-                    onPressed: scope!.onBack,
-                    icon: const Icon(Icons.arrow_back),
-                  )),
+            (scope?.onBack == null ? null : BackButton(onPressed: scope!.onBack)),
       ),
       body: body,
     );

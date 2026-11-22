@@ -12,6 +12,8 @@ class SettingsSliderTile extends StatelessWidget {
     required this.min,
     required this.max,
     required this.onChanged,
+    this.onChangeStart,
+    this.onChangeEnd,
     this.divisions,
     this.leading,
     this.description,
@@ -29,7 +31,9 @@ class SettingsSliderTile extends StatelessWidget {
   final double min;
   final double max;
   final int? divisions;
-  final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChanged;
+  final ValueChanged<double>? onChangeStart;
+  final ValueChanged<double>? onChangeEnd;
   final bool enabled;
 
   @override
@@ -105,6 +109,8 @@ class SettingsSliderTile extends StatelessWidget {
             showValueIndicator: ShowValueIndicator.never,
             padding: EdgeInsets.zero,
             onChanged: enabled ? onChanged : null,
+            onChangeStart: enabled ? onChangeStart : null,
+            onChangeEnd: enabled ? onChangeEnd : null,
           ),
         ],
       ),

@@ -9,23 +9,23 @@ class SettingsCategory {
   const SettingsCategory({
     required this.id,
     required this.label,
-    required this.description,
+    this.description,
     required this.icon,
     required this.builder,
   });
 
   final String id;
   final String label;
-  final String description;
+  final String? description;
   final IconData icon;
   final WidgetBuilder builder;
 }
 
 @immutable
 class SettingsCategoryGroup {
-  const SettingsCategoryGroup({required this.title, required this.categories});
+  const SettingsCategoryGroup({this.title, required this.categories});
 
-  final String title;
+  final String? title;
   final List<SettingsCategory> categories;
 }
 
@@ -93,8 +93,10 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
       GlobalKey<NavigatorState>();
   late final HeroController _heroController =
       MaterialApp.createMaterialHeroController();
+  late final _CanPopObserver _detailPopObserver = _CanPopObserver();
 
   SettingsCategory? _selected;
+  int _popToRootRevision = 0;
   bool? _previousTwoPane;
   bool _layoutChanged = false;
 
@@ -150,18 +152,26 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
 
     if (_layoutChanged) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _layoutChanged = false;
+        if (mounted) {
+          _layoutChanged = false;
+        }
       });
     }
   }
 
   @override
   void dispose() {
+    _detailPopObserver.dispose();
     _heroController.dispose();
     super.dispose();
   }
 
-  void _select(SettingsCategory category) {
+  void _select(SettingsCategory category, {bool fromRail = false}) {
+    final current = _selected ?? (fromRail ? _firstCategory : null);
+    if (fromRail && current?.id == category.id) {
+      setState(() => _popToRootRevision++);
+      return;
+    }
     setState(() => _selected = category);
   }
 
@@ -185,12 +195,20 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
     final shown = _selected ?? _firstCategory;
     final compactDetail = twoPane ? null : _selected;
 
-    return NavigatorPopHandler(
-      onPopWithResult: (_) => _detailNavigatorKey.currentState?.maybePop(),
+    return ValueListenableBuilder<bool>(
+      valueListenable: _detailPopObserver.canPop,
+      builder: (context, canPop, child) {
+        return NavigatorPopHandler(
+          enabled: canPop,
+          onPopWithResult: (_) => _detailNavigatorKey.currentState?.maybePop(),
+          child: child!,
+        );
+      },
       child: HeroControllerScope(
         controller: _heroController,
         child: Navigator(
           key: _detailNavigatorKey,
+          observers: [_detailPopObserver],
           transitionDelegate: _layoutChanged
               ? const _InstantTransitionDelegate()
               : const DefaultTransitionDelegate<dynamic>(),
@@ -224,15 +242,17 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
     bool twoPane,
     SettingsCategory shown,
   ) {
+    final showDefaultBack =
+        widget.onBack != null ||
+        (ModalRoute.of(context)?.impliesAppBarDismissal ?? false);
+
     return Scaffold(
       appBar: AppBar(
         title: widget.title,
+        automaticallyImplyLeading: false,
         leading:
             widget.leading ??
-            IconButton(
-              onPressed: _popParent,
-              icon: const Icon(Icons.arrow_back),
-            ),
+            (showDefaultBack ? BackButton(onPressed: _popParent) : null),
         actions: widget.actions,
       ),
       body: SafeArea(
@@ -240,23 +260,16 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ClipRect(
-              child: AnimatedAlign(
+            if (twoPane)
+              SizedBox(
+                width: widget.railWidth,
+                child: _buildRail(context, shown),
+              ),
+            Expanded(
+              child: AnimatedSwitcher(
                 duration: _layoutChanged
                     ? Duration.zero
                     : widget.transitionDuration,
-                curve: Curves.easeInOutCubic,
-                alignment: AlignmentDirectional.centerStart,
-                widthFactor: twoPane ? 1 : 0,
-                child: SizedBox(
-                  width: widget.railWidth,
-                  child: _buildRail(context, shown),
-                ),
-              ),
-            ),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: widget.transitionDuration,
                 switchInCurve: Curves.easeInOutCubic,
                 switchOutCurve: Curves.easeInOutCubic,
                 child: twoPane
@@ -284,7 +297,12 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
     return Padding(
       key: ValueKey<String>('settings-pane:${shown.id}'),
       padding: widget.detailPadding,
-      child: _withoutScrollbars(_SettingsPaneNavigator(category: shown)),
+      child: _withoutScrollbars(
+        _SettingsPaneNavigator(
+          category: shown,
+          popToRootRevision: _popToRootRevision,
+        ),
+      ),
     );
   }
 
@@ -300,18 +318,20 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
       NavigationDrawer(
         selectedIndex: selectedIndex,
         tilePadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 12, 0),
-        onDestinationSelected: (index) => _select(categories[index]),
+        onDestinationSelected: (index) =>
+            _select(categories[index], fromRail: true),
         children: [
           for (final group in widget.groups) ...[
-            Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(32, 16, 28, 8),
-              child: Text(
-                group.title,
-                style: textTheme.titleSmall?.copyWith(
-                  color: colorScheme.primary,
+            if (group.title != null && group.title!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(32, 16, 28, 8),
+                child: Text(
+                  group.title!,
+                  style: textTheme.titleSmall?.copyWith(
+                    color: colorScheme.primary,
+                  ),
                 ),
               ),
-            ),
             for (final category in group.categories) ...[
               const SizedBox(height: 2),
               NavigationDrawerDestination(
@@ -339,13 +359,16 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
       padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 24),
       children: [
         for (final group in widget.groups) ...[
-          Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 8),
-            child: Text(
-              group.title,
-              style: textTheme.titleSmall?.copyWith(color: colorScheme.primary),
+          if (group.title != null && group.title!.isNotEmpty)
+            Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 8),
+              child: Text(
+                group.title!,
+                style: textTheme.titleSmall?.copyWith(
+                  color: colorScheme.primary,
+                ),
+              ),
             ),
-          ),
           SettingsSplitGroup(
             children: [
               for (final category in group.categories)
@@ -364,9 +387,13 @@ class _SettingsAdaptiveScaffoldState extends State<SettingsAdaptiveScaffold> {
 }
 
 class _SettingsPaneNavigator extends StatefulWidget {
-  const _SettingsPaneNavigator({required this.category});
+  const _SettingsPaneNavigator({
+    required this.category,
+    required this.popToRootRevision,
+  });
 
   final SettingsCategory category;
+  final int popToRootRevision;
 
   @override
   State<_SettingsPaneNavigator> createState() => _SettingsPaneNavigatorState();
@@ -387,9 +414,19 @@ class _SettingsPaneNavigatorState extends State<_SettingsPaneNavigator> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   late final HeroController _heroController =
       MaterialApp.createMaterialHeroController();
+  late final _CanPopObserver _popObserver = _CanPopObserver();
+
+  @override
+  void didUpdateWidget(_SettingsPaneNavigator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.popToRootRevision != oldWidget.popToRootRevision) {
+      _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+    }
+  }
 
   @override
   void dispose() {
+    _popObserver.dispose();
     _heroController.dispose();
     super.dispose();
   }
@@ -400,29 +437,75 @@ class _SettingsPaneNavigatorState extends State<_SettingsPaneNavigator> {
       data: Theme.of(
         context,
       ).copyWith(pageTransitionsTheme: _pageTransitionsTheme),
-      child: NavigatorPopHandler(
-        onPopWithResult: (_) => _navigatorKey.currentState?.maybePop(),
-        child: HeroControllerScope(
-          controller: _heroController,
-          child: Navigator(
-            key: _navigatorKey,
-            onDidRemovePage: (_) {},
-            pages: [
-              MaterialPage<void>(
-                key: ValueKey<String>(
-                  'settings-pane-root:${widget.category.id}',
-                ),
-                child: SettingsPaneScope(
-                  embedded: true,
+      child: SettingsPaneScope(
+        embedded: true,
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _popObserver.canPop,
+          builder: (context, canPop, child) {
+            return NavigatorPopHandler(
+              enabled: canPop,
+              onPopWithResult: (_) => _navigatorKey.currentState?.maybePop(),
+              child: child!,
+            );
+          },
+          child: HeroControllerScope(
+            controller: _heroController,
+            child: Navigator(
+              key: _navigatorKey,
+              observers: [_popObserver],
+              onDidRemovePage: (_) {},
+              pages: [
+                MaterialPage<void>(
+                  key: ValueKey<String>(
+                    'settings-pane-root:${widget.category.id}',
+                  ),
                   child: Builder(builder: widget.category.builder),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _CanPopObserver extends NavigatorObserver {
+  final ValueNotifier<bool> canPop = ValueNotifier<bool>(false);
+  bool _disposed = false;
+
+  void _scheduleSync() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_disposed) {
+        return;
+      }
+      final next = navigator?.canPop() ?? false;
+      if (canPop.value != next) {
+        canPop.value = next;
+      }
+    });
+  }
+
+  void dispose() {
+    _disposed = true;
+    canPop.dispose();
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _scheduleSync();
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _scheduleSync();
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _scheduleSync();
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) =>
+      _scheduleSync();
 }
 
 /// Classic Material 3 forward/back transition for consecutive hierarchy levels.

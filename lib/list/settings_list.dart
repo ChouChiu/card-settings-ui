@@ -5,15 +5,15 @@ class SettingsList extends StatelessWidget {
   const SettingsList({
     required this.sections,
     this.shrinkWrap = false,
-    this.maxWidth = double.infinity,
+    this.maxWidth,
     this.physics,
     this.contentPadding,
     super.key,
-  }) : assert(maxWidth > 0);
+  }) : assert(maxWidth == null || maxWidth > 0);
 
   final List<Widget> sections;
   final bool shrinkWrap;
-  final double maxWidth;
+  final double? maxWidth;
   final ScrollPhysics? physics;
   final EdgeInsetsGeometry? contentPadding;
 
@@ -26,7 +26,7 @@ class SettingsList extends StatelessWidget {
       padding: contentPadding ?? const EdgeInsets.symmetric(vertical: 20),
       itemBuilder: (context, index) => Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
+          constraints: BoxConstraints(maxWidth: maxWidth ?? double.infinity),
           child: sections[index],
         ),
       ),

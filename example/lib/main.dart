@@ -105,56 +105,54 @@ class DemoSettingsController extends ChangeNotifier {
 }
 
 class DemoSettingsPage extends StatelessWidget {
-  DemoSettingsPage({required this.controller, super.key});
+  const DemoSettingsPage({required this.controller, super.key});
 
   final DemoSettingsController controller;
-
-  late final List<SettingsCategoryGroup> groups = [
-    SettingsCategoryGroup(
-      title: 'Component gallery',
-      categories: [
-        SettingsCategory(
-          id: 'appearance',
-          label: 'Theme & slider',
-          description: 'Theme updates, palette switching, and slider tile',
-          icon: Icons.palette_rounded,
-          builder: (_) => AppearanceSettingsPage(controller: controller),
-        ),
-        SettingsCategory(
-          id: 'behavior',
-          label: 'Tile variants',
-          description: 'Switch, tri-state checkbox, and navigation tile',
-          icon: Icons.tune_rounded,
-          builder: (_) => BehaviorSettingsPage(controller: controller),
-        ),
-      ],
-    ),
-    SettingsCategoryGroup(
-      title: 'Selection and metadata',
-      categories: [
-        SettingsCategory(
-          id: 'quality',
-          label: 'Radio group',
-          description: 'Accessible shared-value selection',
-          icon: Icons.high_quality_rounded,
-          builder: (_) => const QualitySettingsPage(),
-        ),
-        SettingsCategory(
-          id: 'about',
-          label: 'Info tile',
-          description: 'Informational content with a trailing value',
-          icon: Icons.info_outline_rounded,
-          builder: (_) => const AboutSettingsPage(),
-        ),
-      ],
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
     return SettingsAdaptiveScaffold(
       title: const Text('Settings'),
-      groups: groups,
+      groups: [
+        SettingsCategoryGroup(
+          title: 'Component gallery',
+          categories: [
+            SettingsCategory(
+              id: 'appearance',
+              label: 'Theme & slider',
+              description: 'Theme updates, palette switching, and slider tile',
+              icon: Icons.palette_rounded,
+              builder: (_) => AppearanceSettingsPage(controller: controller),
+            ),
+            SettingsCategory(
+              id: 'behavior',
+              label: 'Tile variants',
+              description: 'Switch, tri-state checkbox, and navigation tile',
+              icon: Icons.tune_rounded,
+              builder: (_) => BehaviorSettingsPage(controller: controller),
+            ),
+          ],
+        ),
+        SettingsCategoryGroup(
+          title: 'Selection and metadata',
+          categories: [
+            SettingsCategory(
+              id: 'quality',
+              label: 'Radio group',
+              description: 'Accessible shared-value selection',
+              icon: Icons.high_quality_rounded,
+              builder: (_) => const QualitySettingsPage(),
+            ),
+            SettingsCategory(
+              id: 'about',
+              label: 'Info tile',
+              description: 'Informational content with a trailing value',
+              icon: Icons.info_outline_rounded,
+              builder: (_) => const AboutSettingsPage(),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

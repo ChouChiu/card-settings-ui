@@ -1,5 +1,4 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:card_settings_ui/tile/abstract_settings_tile.dart';
 import 'package:card_settings_ui/tile/settings_tile_info.dart';
@@ -138,8 +137,10 @@ class SettingsTile<T> extends AbstractSettingsTile {
 
   late final SettingsTileType tileType;
 
-  final bool isDesktop =
-      !kIsWeb && (Platform.isMacOS || Platform.isLinux || Platform.isWindows);
+  final bool isDesktop = !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.windows);
 
   static const WidgetStateProperty<Icon> thumbIcon =
       WidgetStateProperty<Icon>.fromMap(
@@ -159,8 +160,16 @@ class SettingsTile<T> extends AbstractSettingsTile {
       children: [
         ClipRRect(
           borderRadius: BorderRadius.vertical(
-            top: Radius.circular(settingsTileInfo.isTopTile ? 20 : 3),
-            bottom: Radius.circular(settingsTileInfo.isBottomTile ? 20 : 3),
+            top: Radius.circular(
+              settingsTileInfo.isTopTile
+                  ? settingsTileInfo.outerRadius
+                  : settingsTileInfo.innerRadius,
+            ),
+            bottom: Radius.circular(
+              settingsTileInfo.isBottomTile
+                  ? settingsTileInfo.outerRadius
+                  : settingsTileInfo.innerRadius,
+            ),
           ),
           child: buildTileContent(context),
         ),
@@ -255,7 +264,7 @@ class SettingsTile<T> extends AbstractSettingsTile {
             padding: const EdgeInsets.only(right: 12),
             child: Radio<T>(
               value: radioValue,
-              // Tile-level radio state is deprecated on Flutter 3.32+ in favor
+              // Tile-level radio state is deprecated on Flutter 3.35+ in favor
               // of a RadioGroup ancestor; the tile keeps its original API.
               // ignore: deprecated_member_use
               groupValue: groupValue,
@@ -283,11 +292,13 @@ class SettingsTile<T> extends AbstractSettingsTile {
   }
 
   Widget buildTileContent(BuildContext context) {
+    final settingsTileInfo = SettingsTileInfo.of(context);
     // You need to wrap Ink widgets with Material to clip it properly.
     return Material(
-      color: Theme.of(context).brightness == Brightness.light
-          ? Theme.of(context).colorScheme.surfaceContainerLowest
-          : Theme.of(context).colorScheme.surfaceContainerHigh,
+      color: settingsTileInfo.backgroundColor ??
+          (Theme.of(context).brightness == Brightness.light
+              ? Theme.of(context).colorScheme.surfaceContainerLowest
+              : Theme.of(context).colorScheme.surfaceContainerHigh),
       child: InkWell(
         onTap: (enabled)
             ? () {

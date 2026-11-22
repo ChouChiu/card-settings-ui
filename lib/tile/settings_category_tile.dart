@@ -5,14 +5,14 @@ class SettingsCategoryTile extends StatelessWidget {
   const SettingsCategoryTile({
     required this.icon,
     required this.title,
-    required this.description,
+    this.description,
     required this.onTap,
     super.key,
   });
 
   final IconData icon;
   final String title;
-  final String description;
+  final String? description;
   final VoidCallback onTap;
 
   @override
@@ -45,15 +45,17 @@ class SettingsCategoryTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title, style: textTheme.bodyLarge),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                  if (description != null && description!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      description!,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  ],
                 ],
               ),
             ),

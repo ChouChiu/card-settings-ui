@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:card_settings_ui/section/abstract_settings_section.dart';
 import 'package:card_settings_ui/tile/settings_tile_info.dart';
 
 const double _defaultOuterRadius = 20;
@@ -6,7 +7,7 @@ const double _defaultInnerRadius = 3;
 const double _defaultRowGap = 2;
 
 /// A titled group of settings tiles.
-class SettingsSection extends StatelessWidget {
+class SettingsSection extends AbstractSettingsSection {
   const SettingsSection({
     required this.tiles,
     this.margin,
@@ -17,7 +18,9 @@ class SettingsSection extends StatelessWidget {
     this.innerRadius = _defaultInnerRadius,
     this.tileSpacing = _defaultRowGap,
     super.key,
-  });
+  }) : assert(outerRadius >= 0),
+       assert(innerRadius >= 0),
+       assert(tileSpacing >= 0);
 
   final List<Widget> tiles;
   final EdgeInsetsGeometry? margin;
@@ -105,6 +108,9 @@ class SettingsSplitGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor =
+        backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerLow;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -115,12 +121,15 @@ class SettingsSplitGroup extends StatelessWidget {
             last: index == children.length - 1,
             outerRadius: outerRadius,
             innerRadius: innerRadius,
-            backgroundColor: backgroundColor,
+            color: effectiveColor,
             child: SettingsTileInfo(
               isTopTile: index == 0,
               isBottomTile: index == children.length - 1,
               // Row gaps come from [spacing]; tiles must not add their own.
               needDivider: false,
+              backgroundColor: effectiveColor,
+              outerRadius: outerRadius,
+              innerRadius: innerRadius,
               child: children[index],
             ),
           ),
@@ -136,7 +145,7 @@ class _SplitRow extends StatelessWidget {
     required this.last,
     required this.outerRadius,
     required this.innerRadius,
-    required this.backgroundColor,
+    required this.color,
     required this.child,
   });
 
@@ -144,7 +153,7 @@ class _SplitRow extends StatelessWidget {
   final bool last;
   final double outerRadius;
   final double innerRadius;
-  final Color? backgroundColor;
+  final Color color;
   final Widget child;
 
   @override
@@ -153,8 +162,7 @@ class _SplitRow extends StatelessWidget {
     final bottom = last ? outerRadius : innerRadius;
 
     return Material(
-      color:
-          backgroundColor ?? Theme.of(context).colorScheme.surfaceContainerLow,
+      color: color,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(top),
@@ -169,10 +177,9 @@ class _SplitRow extends StatelessWidget {
 
 /// A settings section whose radio tiles share one [RadioGroup].
 ///
-/// Radio tiles inside the section may omit [SettingsTile.radioTile]'s
-/// [SettingsTile.radioTile.groupValue] and
-/// [SettingsTile.radioTile.onChanged]; the group drives their selection.
-class SettingsRadioSection<T> extends StatelessWidget {
+/// Radio tiles inside the section may omit `groupValue` and `onChanged`; the
+/// enclosing [RadioGroup] drives their selection.
+class SettingsRadioSection<T> extends AbstractSettingsSection {
   const SettingsRadioSection({
     required this.groupValue,
     required this.onChanged,
@@ -181,8 +188,13 @@ class SettingsRadioSection<T> extends StatelessWidget {
     this.bottomInfo,
     this.margin,
     this.backgroundColor,
+    this.outerRadius = _defaultOuterRadius,
+    this.innerRadius = _defaultInnerRadius,
+    this.tileSpacing = _defaultRowGap,
     super.key,
-  });
+  }) : assert(outerRadius >= 0),
+       assert(innerRadius >= 0),
+       assert(tileSpacing >= 0);
 
   final T? groupValue;
   final ValueChanged<T?> onChanged;
@@ -191,6 +203,9 @@ class SettingsRadioSection<T> extends StatelessWidget {
   final Widget? bottomInfo;
   final EdgeInsetsGeometry? margin;
   final Color? backgroundColor;
+  final double outerRadius;
+  final double innerRadius;
+  final double tileSpacing;
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +217,9 @@ class SettingsRadioSection<T> extends StatelessWidget {
         bottomInfo: bottomInfo,
         margin: margin,
         backgroundColor: backgroundColor,
+        outerRadius: outerRadius,
+        innerRadius: innerRadius,
+        tileSpacing: tileSpacing,
         tiles: tiles,
       ),
     );

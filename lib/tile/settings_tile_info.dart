@@ -6,15 +6,28 @@ class SettingsTileInfo extends InheritedWidget {
     required this.needDivider,
     required this.isTopTile,
     required this.isBottomTile,
+    this.backgroundColor,
+    this.outerRadius = 20,
+    this.innerRadius = 3,
     required super.child,
   });
 
   final bool needDivider;
   final bool isTopTile;
   final bool isBottomTile;
+  final Color? backgroundColor;
+  final double outerRadius;
+  final double innerRadius;
 
   @override
-  bool updateShouldNotify(SettingsTileInfo oldWidget) => true;
+  bool updateShouldNotify(SettingsTileInfo oldWidget) {
+    return needDivider != oldWidget.needDivider ||
+        isTopTile != oldWidget.isTopTile ||
+        isBottomTile != oldWidget.isBottomTile ||
+        backgroundColor != oldWidget.backgroundColor ||
+        outerRadius != oldWidget.outerRadius ||
+        innerRadius != oldWidget.innerRadius;
+  }
 
   static SettingsTileInfo of(BuildContext context) {
     final SettingsTileInfo? result =
